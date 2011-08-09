@@ -1,0 +1,32 @@
+sberla - (Google) Safe Browsing Erlang API
+==========================================
+
+
+sberla is an open-source Erlang implementation of Google:
+- Safe Browsing API v2
+- Safe Browsing Lookup API
+
+
+More specifically, sberla is an Erlang application providing an API
+to Google Safe Browsing. The design was inspired by eCouch, an Erlang
+API to CouchDB by Vitor Rodrigues, and, in turn, by Serge Aleynikov's
+"Building a Non-blocking TCP server using OTP principles"
+<http://www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles>
+
+
+Name:
+-----
+
+Named after the name of Lieutenant Templeton "Face" Peck in the A-Team
+Italian edition, sberla is also the Italian for 'slap'.
+
+Embedding sberla in your Erlang application is slapping online malware 
+in the face. It really is!
+
+
+
+Status:
+-------
+
+The implementation of the Safe Browsing Lookup API is ready.
+The Safe Browsing API v2 will be implemented in the upcoming release.

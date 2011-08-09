@@ -6,10 +6,11 @@
   {modules,      [sberla_listener, sberla_client]},
   {registered,   [sberla_client_sup, sberla_listener]},
   {applications, [kernel, stdlib, inets, ssl]},
+
   %%
   %% mod: Specify the module name to start the application, plus args
   %%
-  {mod, {sberla, {"sb-ssl.google.com", "443", "ABQIAAAA4HdJbwrUIpfZSECMUQvnzxSlRRoX9QfV8k_oN4uXLea5vTem2w" }}},
+  {mod, {sberla, {"sb-ssl.google.com", "443", "add-your-safebrowsing-api-key-here" }}},
   {env, []}
  ]
 }.

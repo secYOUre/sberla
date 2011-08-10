@@ -38,6 +38,7 @@
 
 -behaviour(application).
 
+
 %% Application callbacks
 -export([start/2, stop/1, init/1, start_client/0]).
 
@@ -47,13 +48,7 @@
          lookupURLs/1
         ]).
 
-
--define(CLIENT, "sberla"). %% client identity
--define(APPVER, "0.1").	   %% client version
--define(PVER, "3.0").      %% protocol version supported by sberla
-
--define(SAFEBROWSING_PATH, "/safebrowsing/api/lookup"). % SB API Path
-
+-include("sberla.hrl").
 
 
 -define(MAX_RESTART,    5).
@@ -178,8 +173,8 @@ isItSafe(Url) ->
     %BaseOptions = [],
     Options = [ {"url", Url} ],
     Reply = gen_server:call(sberla_listener, 
-				    {get, Options, ?SAFEBROWSING_PATH, []}, 
-                            ?DEFAULT_TIMEOUT),
+                    {lookup_get, Options, ?SAFEBROWSING_PATH, []}, 
+                    ?DEFAULT_TIMEOUT),
     handle_reply(Reply).
 
 
@@ -187,8 +182,8 @@ lookupURLs([H|T]) ->
     %% Options = get_api_options(),
     Options = [], 
     Reply = gen_server:call(sberla_listener, 
-				    {post, Options, ?SAFEBROWSING_PATH, [H|T]},
-                            ?DEFAULT_TIMEOUT),
+                    {lookup_post, Options, ?SAFEBROWSING_PATH, [H|T]},
+                    ?DEFAULT_TIMEOUT),
     handle_reply(Reply).
 
 %% Google Safe Browsing APIv2

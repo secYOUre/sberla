@@ -37,14 +37,10 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+-include("sberla.hrl").
+
+
 -record(state, {host, port, apikey}).
-
--define(CLIENT, "sberla"). %% client identity
--define(APPVER, "0.1").    %% client version
--define(PVER, "3.0").      %% protocol version supported by sberla
-
--define(SAFEBROWSING_PATH, "/safebrowsing/api/lookup"). % SB API Path
-
 
 
 %%--------------------------------------------------------------------
@@ -96,33 +92,21 @@ init([Host, Port, Apikey]) ->
 handle_call({Op, Options, Path, L}, From, State) ->
     {ok, Pid} = sberla:start_client(),
     NewOptions = lists:append([ get_api_options(State#state.apikey) | Options]),
-    CastedOperation = {Op, NewOptions},
-    gen_server:cast(Pid, {CastedOperation, 
-                         State#state.host, State#state.port, Path, L, From}),
-    {noreply, State}.
 
-%%    case Operation of
-%%         {get, Options, Path, L} ->
-%%              io:format("handle_call: ~n"),
-%%              NewOptions = lists:append([ get_api_options(State#state.apikey) | Options]),
-%%	      CastedOperation = {get, NewOptions},
-%%              gen_server:cast(Pid, {CastedOperation, 
-%%                         State#state.host, State#state.port, Path, L, From}),
-%%              io:format("noreply, State -- coming back: ~n"),
-%%              {noreply, State};
-%%
-%%         {post, Options, Path, L} ->
-%%              io:format("handle_call: ~n"),
-%%              NewOptions = lists:append([ get_api_options(State#state.apikey) | Options]),
-%%	      CastedOperation = {post, NewOptions},
-%%              gen_server:cast(Pid, {CastedOperation,
-%%                         State#state.host, State#state.port, Path, L, From}),
-%%              io:format("noreply, State -- coming back: ~n"),
- %%             {noreply, State};
- %%        _Else ->
- %%             io:format("no operation matched - coming back: ~n"),
- %%             {noreply, State}
-%%    end.
+    case Op of
+         lookup_get  ->
+              CastedOperation = {Op, NewOptions},
+              gen_server:cast(Pid, {CastedOperation, 
+                         State#state.host, State#state.port, Path, L, From}),
+              {noreply, State};
+         lookup_post ->
+              CastedOperation = {Op, NewOptions},
+              gen_server:cast(Pid, {CastedOperation, 
+                         State#state.host, State#state.port, Path, L, From}),
+              {noreply, State};
+         Other -> 
+              {reply, {command_unknown, Other}}
+    end.
 
 %%--------------------------------------------------------------------
 %% @spec handle_cast(Msg, State) -> {noreply, State} |

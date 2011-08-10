@@ -100,14 +100,14 @@ handle_call(_Request, _From, State) ->
 handle_cast({Operation, Host, Port, Path, L, From}, State) ->
     case Operation of
 
-        {get, Options} ->
+        {lookup_get, Options} ->
             QueryString = lists:flatten(query_string(Options)),
             Url = lists:flatten(io_lib:format("https://~s:~s~s~s", [Host, Port, Path, QueryString])),
             Reply = http_g_request(Url),
             gen_server:reply(From, Reply),
             {stop, normal, State};
 
-        {post, Options} ->
+        {lookup_post, Options} ->
             QueryString = lists:flatten(query_string(Options)),
             Url = lists:flatten(io_lib:format("https://~s:~s~s~s", [Host, Port, Path, QueryString])),
             Body = format_body(L),

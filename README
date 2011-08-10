@@ -30,3 +30,11 @@ Status:
 
 The implementation of the Safe Browsing Lookup API is ready.
 The Safe Browsing API v2 will be implemented in the upcoming release.
+
+
+Features:
+---------
+
+- Follows all the OTP design principles
+- Can run stand-alone with its own supervision tree or be included inside an existing supervision tree
+- Guarantees synchronism between calls and their responses

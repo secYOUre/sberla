@@ -45,7 +45,8 @@
 %% API
 -export([
          isItSafe/1,
-         lookupURLs/1
+         lookupURLs/1,
+         requestMACKey/0
         ]).
 
 -include("sberla.hrl").
@@ -76,22 +77,36 @@
 %% @end
 %%--------------------------------------------------------------------
 
-start(_Type, {Host, Port, Apikey}) ->
-    case get_app_opt(host, Host) of
+start(_Type, {SSLHost, SSLPort, Host, Port, Apikey}) ->
+    case get_app_opt(sslhost, SSLHost) of
         none ->
-            {error, "Missing required config option 'host'"};
-        HostVal ->
-            case get_app_opt(port, Port) of
+            {error, "Missing required config option 'sslhost'"};
+        SSLHostVal ->
+            case get_app_opt(sslport, SSLPort) of
                 none ->
-                    {error, "Missing required config option 'port'"};
-                PortVal ->
-                    case get_app_opt(user, Apikey) of
-                        none ->
-                          {error, "Missing required config options 'apikey'"};
-                        ApikeyVal ->
-                           supervisor:start_link({local, ?MODULE},
-                                              ?MODULE,
-                                              [HostVal, PortVal, ApikeyVal])
+                    {error, "Missing required config option 'sslport'"};
+                SSLPortVal ->
+                   case get_app_opt(host, Host) of
+                       none ->
+                           {error, "Missing required config option 'host'"};
+                       HostVal ->
+                          case get_app_opt(port, Port) of
+                             none ->
+                                 {error, "Missing required config option 'port'"};
+                             PortVal ->
+                                 case get_app_opt(user, Apikey) of
+                                     none ->
+                                         {error, "Missing required config options 'apikey'"};
+                                     ApikeyVal ->
+                                        supervisor:start_link({local, ?MODULE},
+                                                              ?MODULE,
+                                                              [SSLHostVal, 
+                                                               SSLPortVal, 
+                                                               Host, 
+                                                               Port, 
+                                                               ApikeyVal])
+                                 end
+                           end 
                     end
             end
     end.
@@ -115,10 +130,12 @@ stop(_State) ->
 
 %% @hidden
 
-init([Host, Port, Apikey]) ->
+init([SSLHost, SSLPort, Host, Port, Apikey]) ->
     % making the init variable accessible through env (used by the tests)
     case application:get_application() of
         {ok, Application} ->
+            application:set_env(Application, sslhost, SSLHost),
+            application:set_env(Application, sslport, SSLPort),
             application:set_env(Application, host, Host),
             application:set_env(Application, port, Port),
             application:set_env(Application, apikey, Apikey);
@@ -129,7 +146,7 @@ init([Host, Port, Apikey]) ->
             [
               % sberla Listener
               {   sberla_listener_sup,   % Id       = internal id
-                  {sberla_listener,start_link,[Host, Port, Apikey]},   % StartFun = {M, F, A}
+                  {sberla_listener,start_link,[SSLHost, SSLPort, Host, Port, Apikey]},   % StartFun = {M, F, A}
                   permanent,  % Restart  = permanent | transient | temporary
                   2000,       % Shutdown = brutal_kill | int() >= 0 | infinity
                   worker,                  % Type     = worker | supervisor
@@ -187,6 +204,16 @@ lookupURLs([H|T]) ->
     handle_reply(Reply).
 
 %% Google Safe Browsing APIv2
+
+requestMACKey() ->
+    Reply = gen_server:call(sberla_listener,
+                    {lookup_get, [], ?NEWKEY_PATH, []}, ?DEFAULT_TIMEOUT),
+    %% TODO: update the environment with the mackey and the wrappedkey
+    %%       make the keys available to the listener and keep'em in the 
+    %%       listener state record
+    handle_reply(Reply).
+
+
 %% TODO
 
 %%====================================================================

@@ -31,7 +31,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/3]).
+-export([start_link/5]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -40,7 +40,7 @@
 -include("sberla.hrl").
 
 
--record(state, {host, port, apikey}).
+-record(state, {sslhost, sslport, host, port, apikey}).
 
 
 %%--------------------------------------------------------------------
@@ -53,13 +53,13 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start_link(Host, Port) -> {ok,Pid} | ignore | {error,Error}
+%% @spec start_link(SSLHost, SSLPort) -> {ok,Pid} | ignore | {error,Error}
 %% @doc Starts the server
 %% @end 
 %%--------------------------------------------------------------------
-start_link(Host, Port, Apikey) ->
+start_link(SSLHost, SSLPort, Host, Port, Apikey) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
-                          [Host, Port, Apikey],
+                          [SSLHost, SSLPort, Host, Port, Apikey],
                           []).
 
 %%====================================================================
@@ -74,8 +74,12 @@ start_link(Host, Port, Apikey) ->
 %% @doc Initiates the server
 %% @end 
 %%--------------------------------------------------------------------
-init([Host, Port, Apikey]) ->
-    {ok, #state{host = Host, port = Port, apikey = Apikey}}.
+init([SSLHost, SSLPort, Host, Port, Apikey]) ->
+    {ok, #state{sslhost = SSLHost, 
+                sslport = SSLPort, 
+                   host = Host, 
+                   port = Port, 
+                 apikey = Apikey}}.
 
 %%--------------------------------------------------------------------
 %% @spec 
@@ -97,12 +101,12 @@ handle_call({Op, Options, Path, L}, From, State) ->
          lookup_get  ->
               CastedOperation = {Op, NewOptions},
               gen_server:cast(Pid, {CastedOperation, 
-                         State#state.host, State#state.port, Path, L, From}),
+                         State#state.sslhost, State#state.sslport, Path, L, From}),
               {noreply, State};
          lookup_post ->
               CastedOperation = {Op, NewOptions},
               gen_server:cast(Pid, {CastedOperation, 
-                         State#state.host, State#state.port, Path, L, From}),
+                         State#state.sslhost, State#state.sslport, Path, L, From}),
               {noreply, State};
          Other -> 
               {reply, {command_unknown, Other}}

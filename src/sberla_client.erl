@@ -103,7 +103,7 @@ handle_cast({Operation, Host, Port, Path, L, From}, State) ->
         {lookup_get, Options} ->
             QueryString = lists:flatten(query_string(Options)),
             Url = lists:flatten(io_lib:format("https://~s:~s~s~s", [Host, Port, Path, QueryString])),
-            Reply = http_g_request(Url),
+            Reply = https_g_request(Url),
             gen_server:reply(From, Reply),
             {stop, normal, State};
 
@@ -111,7 +111,7 @@ handle_cast({Operation, Host, Port, Path, L, From}, State) ->
             QueryString = lists:flatten(query_string(Options)),
             Url = lists:flatten(io_lib:format("https://~s:~s~s~s", [Host, Port, Path, QueryString])),
             Body = format_body(L),
-            Reply = http_p_request(post, Url, Body),
+            Reply = https_p_request(post, Url, Body),
             gen_server:reply(From, Reply),
             {stop, normal, State};
 
@@ -187,22 +187,29 @@ format_body([H|T], Separator, Acc, C) ->
     format_body(T, Separator, [O | Acc], C + 1).
 
 
+%% https
+https_p_request(Method, Url, Body) ->
+    http_p_request(Method, Url, Body, "text/plain", [{ssl, [{verify,1}]}]).
+https_g_request(Url) ->
+    http_g_request(Url, [{ssl, [{verify,1}]}]).
+https_d_request(Url) ->
+    http_d_request(Url, [{ssl, [{verify,1}]}]).
+
+
+%% http
 http_p_request(Method, Url, Body) ->
-    http_p_request(Method, Url, Body, "text/plain").
-http_p_request(Method, Url, Body, ContentType) ->
-    case http:request(Method, {Url, [], ContentType, Body}, [{ssl, [{verify,1}]}], []) of
+    http_p_request(Method, Url, Body, "text/plain", []).
+http_p_request(Method, Url, Body, ContentType, Options) ->
+    case http:request(Method, {Url, [], ContentType, Body}, Options, []) of
         {ok, {_Status, _Header, RespBody}} ->
             RespBody;
         {error, Reason} ->
-            {error, Reason};
-	{ok, Else} -> 
-            case Else of 
-               {_Status, _Header, Body} -> Body;
-               E -> {stillunmatched, E}
-            end
+            {error, Reason}
     end.
 http_g_request(Url) ->
-    case http:request(get, {Url, []}, [{ssl, [{verify,1}]}], []) of
+    http_g_request(Url, []).
+http_g_request(Url, Options) ->
+    case http:request(get, {Url, []},  Options, []) of
         {ok, {_Status, _Header, Body}} ->
             %%{_Status, _Header, Body};
             Body;
@@ -210,7 +217,9 @@ http_g_request(Url) ->
             {error, Reason}
     end.
 http_d_request(Url) ->
-    case http:request(delete, {Url, []}, [{ssl, [{verify,1}]}], []) of
+    http_d_request(Url, []).
+http_d_request(Url, Options) ->
+    case http:request(delete, {Url, []}, Options, []) of
         {ok, {_Status, _Header, Body}} ->
             Body;
         {error, Reason} ->

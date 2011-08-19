@@ -21,14 +21,10 @@
 %% @version {@version}
 %%
 %% @doc
-%% <h1>Elang Client of Google Safe Browsing APIv2</h1>
-%% eCouch is an application that provides an API to a CouchDb server
-%% It uses the <a href="http://www.lshift.net/blog/2007/02/17/json-and-json-rpc-for-erlang">rfc4627</a> module from <a href="http://www.lshift.net/">LShift</a>
-%% The design was inspired in the article <a href="http://www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles">Building a Non-blocking TCP server using OTP principles</a>
-%% and assumes that <a href="http://www.erlang.org/doc/apps/inets/index.html">inets</a> and ssl application are running.
-%% todo:
-%% Accept a list of servers and implement load distribution algorithms <br/>
-%% Implement views
+%% <h1>Erlang Client to Google Safe Browsing supporting APIv2</h1>
+%% sberla is an application that provides an Erlang API to 
+%% Google Safe Browsing service.
+%% sberla assumes that <a href="http://www.erlang.org/doc/apps/inets/index.html">inets</a> and ssl application are running.
 %%
 %% @end
 %% =====================================================================
@@ -36,153 +32,62 @@
 -module(sberla).
 -author('Alfonso De Gregorio').
 
--behaviour(application).
+-export([start/0, start/1, stop/0]).
 
-
-%% Application callbacks
--export([start/2, stop/1, init/1, start_client/0]).
 
 %% API
 -export([
          isItSafe/1,
          lookupURLs/1,
-         requestMACKey/0
+         requestMACKey/0,
+	 canon/1
         ]).
 
 -include("sberla.hrl").
 
 
--define(MAX_RESTART,    5).
--define(MAX_TIME,      60).
-%% Define the timeout for gen_server calls to be something longer than 5 seconds.
+%% Define the timeout for gen_server calls to be something longer than 5 seconds
 -define(DEFAULT_TIMEOUT, 30000).
 
-%%====================================================================
-%% Application callbacks
-%%====================================================================
+
 %%--------------------------------------------------------------------
-%% @spec start(_Type, StartArgs::startargs()) -> {ok, Pid} |
-%%                                 {ok, Pid, State} |
-%%                                 {error, Reason}
+%% Function: start([, Type]) -> ok
 %%
-%% @type startargs() = {host(), tcp_port()}
-%% @type host() = string()
-%% @type tcp_port() = int()
+%%  Type =  permanent | transient | temporary
 %%
-%% @doc This function is called whenever an application
-%% is started using application:start/1,2, and should start the processes
-%% of the application. If the application is structured according to the
-%% OTP design principles as a supervision tree, this means starting the
-%% top supervisor of the tree.
-%% @end
+%% Description: Starts the inets application. Default type
+%% is temporary. see application(3)
 %%--------------------------------------------------------------------
+start() ->
+    application:start(sberla).
 
-start(_Type, {SSLHost, SSLPort, Host, Port, Apikey}) ->
-    case get_app_opt(sslhost, SSLHost) of
-        none ->
-            {error, "Missing required config option 'sslhost'"};
-        SSLHostVal ->
-            case get_app_opt(sslport, SSLPort) of
-                none ->
-                    {error, "Missing required config option 'sslport'"};
-                SSLPortVal ->
-                   case get_app_opt(host, Host) of
-                       none ->
-                           {error, "Missing required config option 'host'"};
-                       HostVal ->
-                          case get_app_opt(port, Port) of
-                             none ->
-                                 {error, "Missing required config option 'port'"};
-                             PortVal ->
-                                 case get_app_opt(user, Apikey) of
-                                     none ->
-                                         {error, "Missing required config options 'apikey'"};
-                                     ApikeyVal ->
-                                        supervisor:start_link({local, ?MODULE},
-                                                              ?MODULE,
-                                                              [SSLHostVal, 
-                                                               SSLPortVal, 
-                                                               Host, 
-                                                               Port, 
-                                                               ApikeyVal])
-                                 end
-                           end 
-                    end
-            end
-    end.
-
-
-%% @hidden
-
-start_client() ->
-    supervisor:start_child(sberla_client_sup, []).
+start(Type) ->
+    application:start(sberla, Type).
 
 %%--------------------------------------------------------------------
-%% @spec stop(State) -> void()
-%% @doc This function is called whenever an application
-%% has stopped. It is intended to be the opposite of Module:start/2 and
-%% should do any necessary cleaning up. The return value is ignored.
-%% @end
+%% Function: stop() -> ok
+%%
+%% Description: Stops the inets application.
+%%--------------------------------------------------------------------
+stop() ->
+    application:stop(sberla).
+
+%%--------------------------------------------------------------------
+%% Function: connect(Host, Port, Options) ->
+%%           connect(Host, Port, Options, Timeout -> ConnectionRef | {error, Reson}
+%%
+%%      Host - string()
+%%      Port - integer()
+%%      Options - [{Option, Value}]
+%%      Timeout - infinity | integer().
+%%
+%% Description: Starts an ssh connection.
 %%--------------------------------------------------------------------
 
-stop(_State) ->
-    ok.
 
-%% @hidden
-
-init([SSLHost, SSLPort, Host, Port, Apikey]) ->
-    % making the init variable accessible through env (used by the tests)
-    case application:get_application() of
-        {ok, Application} ->
-            application:set_env(Application, sslhost, SSLHost),
-            application:set_env(Application, sslport, SSLPort),
-            application:set_env(Application, host, Host),
-            application:set_env(Application, port, Port),
-            application:set_env(Application, apikey, Apikey);
-        _ -> ok
-    end,
-    {ok,
-        {_SupFlags = {one_for_one, ?MAX_RESTART, ?MAX_TIME},
-            [
-              % sberla Listener
-              {   sberla_listener_sup,   % Id       = internal id
-                  {sberla_listener,start_link,[SSLHost, SSLPort, Host, Port, Apikey]},   % StartFun = {M, F, A}
-                  permanent,  % Restart  = permanent | transient | temporary
-                  2000,       % Shutdown = brutal_kill | int() >= 0 | infinity
-                  worker,                  % Type     = worker | supervisor
-                  [sberla_listener]        % Modules  = [Module] | dynamic
-              },
-              % Client instance supervisor
-              {   sberla_client_sup,
-                  {supervisor,start_link,[{local, sberla_client_sup}, ?MODULE, [sberla_client]]},
-                  permanent, % Restart  = permanent | transient | temporary
-                  infinity,  % Shutdown = brutal_kill | int() >= 0 | infinity
-                  supervisor,  % Type     = worker | supervisor
-			  []   % Modules  = [Module] | dynamic
-              }
-            ]
-        }
-    };
-
-%% @hidden
-
-init([Module]) ->
-    {ok,
-        {_SupFlags = {simple_one_for_one, ?MAX_RESTART, ?MAX_TIME},
-            [
-              % HTTP Client
-              {   undefined,         % Id       = internal id
-                  {Module,start_link,[]},  % StartFun = {M, F, A}
-                  temporary, % Restart  = permanent | transient | temporary
-                  2000,      % Shutdown = brutal_kill | int() >= 0 | infinity
-                  worker,    % Type     = worker | supervisor
-                  []         % Modules  = [Module] | dynamic
-              }
-            ]
-        }
-    }.
-
-%% API Functions
+%%====================================================================
+%% API functions
+%%====================================================================
 
 %% Google Safe Browsing Lookup API
 isItSafe(Url) ->
@@ -215,6 +120,9 @@ requestMACKey() ->
 
 
 %% TODO
+canon(Url) ->
+   Reply = gen_server:call(sberla_listener, {canon, [], Url, []}, ?DEFAULT_TIMEOUT),
+   Reply.
 
 %%====================================================================
 %% Internal functions
@@ -233,24 +141,3 @@ handle_reply(Reply) ->
         %%R                 -> io:format("~p ~n", [R])
     end.
 
-get_api_options() ->
-    [
-      {"client", ?CLIENT},
-      {"appver", ?APPVER},
-      {"pver", ?PVER},
-      {"apikey", get_app_opt(apikey, [])}
-    ].
-
-get_app_opt(Opt, Default) ->
-    Value = case application:get_application() of
-        {ok, Application} -> application:get_env(Application, Opt);
-        _ -> undefined
-        end,
-    case Value of
-        {ok, Val} -> Val;
-        _ ->
-            case init:get_argument(Opt) of
-                [[Val | _]] -> Val;
-                error -> Default
-            end
-        end.

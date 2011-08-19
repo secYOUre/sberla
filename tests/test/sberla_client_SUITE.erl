@@ -5,6 +5,7 @@
 
 -include_lib("common_test/include/ct.hrl").
 
+-import(test_helper).
 -import(sberla_client).
 -import(lists).
 % Let's error out if our tests take over a minute to complete. This can be reconfigured

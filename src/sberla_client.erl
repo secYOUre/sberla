@@ -18,10 +18,9 @@
 %%%-------------------------------------------------------------------
 %%% @private
 %%% File:      sberla_client.erl
-%%% @author    Alfonso De Gregorio <adg@crypto.lo.gy> []
+%%% @author    Alfonso De Gregorio <adg@crypto.lo.gy> 
 %%% @copyright 2011 Alfonso De Gregorio
-%%% @doc	based upon ecouch API by Vitor Rodrigues
-%%%             https://github.com/greut/ecouch.git
+%%% @doc
 %%%
 %%% @end
 %%%
@@ -40,14 +39,23 @@
          url_encode/1
         ]).
 
+
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
+
+-include("sberla.hrl").
+
+
+-record(state, {   expression_sup
+               }).
 
 %%--------------------------------------------------------------------
 %% macro definitions
 %%--------------------------------------------------------------------
 -define(SERVER, ?MODULE).
+
+
 
 %%====================================================================
 %% API
@@ -73,7 +81,8 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    {ok, []}.
+	{ok, []}.
+
 
 %%--------------------------------------------------------------------
 %% @spec
@@ -97,6 +106,11 @@ handle_call(_Request, _From, State) ->
 %% @doc Handling cast messages
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({canonicalize_url, Url, From}, State ) ->
+    {ok, Pid} = sberla_sup:start_expression(),
+    gen_server:cast(Pid, {canonicalize_url, Url, From}),
+    {noreply, State};
+    
 handle_cast({Operation, Host, Port, Path, L, From}, State) ->
     case Operation of
 
@@ -226,4 +240,7 @@ http_d_request(Url, Options) ->
             {error, Reason}
     end.
 
-url_encode(Url) -> edoc_lib:escape_uri(Url).
+url_encode(Url) -> escape:escape_uri(Url).
+
+
+

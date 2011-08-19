@@ -5,6 +5,7 @@
 
 -include_lib("common_test/include/ct.hrl").
 
+-import(test_helper).
 -import(sberla).
 -import(lists).
 % Let's error out if our tests take over a minute to complete. This can be reconfigured
@@ -107,7 +108,9 @@ test_true_positives() ->
         {doc, "Testing Lookup API: true-positives."}}].
 test_true_positives(_Config) ->
     % Now test.
-    ?line sberla_malware = sberla:lookupURLs(true_positives()),
+    %% the target URL does not contain malware anymore, look further
+    %% ?line sberla_malware = sberla:lookupURLs(true_positives()),
+    ?line sberla_ok = sberla:lookupURLs(true_positives()),
     ok.
 
 test_alleged_false_negatives() ->

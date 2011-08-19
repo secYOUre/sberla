@@ -1,0 +1,24 @@
+{application, sberla,
+ [
+  {description, "(Google) Safe Browsing Erlang API"},
+  {vsn, "%VSN%"},
+  {id, "sberla"},
+  {modules,      [sberla,
+                  sberla_app,
+                  sberla_sup,
+                  sberla_listener, 
+                  sberla_client,
+                  sberla_expression]},
+  %% {registered, [sberla_client_sup, sberla_listener, sberla_expression_sup]},
+  {registered, []},
+  {applications, [kernel, stdlib, inets, ssl]},
+
+  %%
+  %% mod: Specify the module name to start the application, plus args
+  %%
+  {mod, {sberla_app, {"sb-ssl.google.com", "443", 
+                      "safebrowsing.clients.google.com", "80",
+                      "add-your-safebrowsing-api-key-here" }}},
+  {env, []}
+ ]
+}.

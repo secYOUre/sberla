@@ -94,7 +94,7 @@ init([SSLHost, SSLPort, Host, Port, Apikey]) ->
 %%--------------------------------------------------------------------
 %%handle_call(Operation, From, State) ->
 handle_call({Op, Options, Path, L}, From, State) ->
-    {ok, Pid} = sberla:start_client(),
+    {ok, Pid} = sberla_sup:start_client(),
     NewOptions = lists:append([ get_api_options(State#state.apikey) | Options]),
 
     case Op of
@@ -108,6 +108,11 @@ handle_call({Op, Options, Path, L}, From, State) ->
               gen_server:cast(Pid, {CastedOperation, 
                          State#state.sslhost, State#state.sslport, Path, L, From}),
               {noreply, State};
+
+	 canon ->
+	      gen_server:cast(Pid, {canonicalize_url, Path, From}),
+	      {noreply, State};
+
          Other -> 
               {reply, {command_unknown, Other}}
     end.

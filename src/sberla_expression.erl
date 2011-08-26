@@ -262,14 +262,10 @@ unescape(Unescaped) ->
     url_encode(unquote_recurse(Unquoted, Unescaped)).
 
 unquote_recurse(Unquoted, Unescaped) ->
-    if 
-        Unquoted =:= Unescaped ->
-              Unquoted;
-        Unquoted =/= Unescaped ->
-              Unescaped2 = Unquoted,
-              unquote_recurse(unquote(Unquoted), Unescaped2)
-    end.
-
+	case Unquoted of
+		Unescaped -> Unquoted;
+		_         -> unquote_recurse(unquote(Unquoted), Unquoted)
+	end.
 
 %%
 %% Split the Url in its scheme, netloc, path, query

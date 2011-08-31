@@ -502,8 +502,6 @@ process_ip_part(X, AllowOctal, State) ->
 %% Parse the String as a number in base Base and return it in decimal
 %% string_to_decimal/1 guess the base from the number syntax.
 %% An empty list is returned if no base conversion can be performed.
-%% NB: With bases different than 10, string:to_integer/1 or
-%% list_to_integer/1 would both fail to parse the notation base#value.
 string_to_decimal(String, State) when is_list(String) ->
     string_to_decimal(String, true, State);
 string_to_decimal(_String, _State) -> [].
@@ -513,12 +511,10 @@ string_to_decimal(String, AllowOctal, State)   when is_list(String)
     {Base, Match} = find_base(String, AllowOctal, State),
     case {Base, Match} of
          {nobase, nomatch} -> [];
-         {_, _}            -> string_to_decimal(Match, integer_to_list(Base), State)
+         {_, _}            -> erlang:list_to_integer(
+                                        lists:flatten(Match), Base)
+         %% {_, _}            -> string_to_decimal(Match, integer_to_list(Base), State)
     end;
-string_to_decimal(String, Base, _State) when is_list(String) andalso is_list(Base) ->
-    {ok,[{integer,_,Value},{_,_}],1} = erl_scan:string(
-             lists:flatten(io_lib:format("~s#~s.", [Base, String]))),
-    Value;
 string_to_decimal(_, _, _) -> [].
 
 

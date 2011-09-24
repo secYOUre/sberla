@@ -203,18 +203,21 @@ format_body([H|T], Separator, Acc, C) ->
 
 %% https
 https_p_request(Method, Url, Body) ->
-    http_p_request(Method, Url, Body, "text/plain", [{ssl, [{verify,1}]}]).
+    CACert = filename:join([filename:dirname(code:which(?MODULE)), "..", "data", "cacerts.pem"]),
+    http_p_request(Method, Url, Body, "text/plain", [{ssl, [{verify,0},{cacertfile, CACert}]}]).
 https_g_request(Url) ->
-    http_g_request(Url, [{ssl, [{verify,1}]}]).
+    CACert = filename:join([filename:dirname(code:which(?MODULE)), "..", "data", "cacerts.pem"]),
+    http_g_request(Url, [{ssl, [{verify,0}, {cacertfile, CACert}]}]).
 https_d_request(Url) ->
-    http_d_request(Url, [{ssl, [{verify,1}]}]).
+    CACert = filename:join([filename:dirname(code:which(?MODULE)), "..", "data", "cacerts.pem"]),
+    http_d_request(Url, [{ssl, [{verify,0}, {cacertfile, CACert}]}]).
 
 
 %% http
 http_p_request(Method, Url, Body) ->
     http_p_request(Method, Url, Body, "text/plain", []).
 http_p_request(Method, Url, Body, ContentType, Options) ->
-    case http:request(Method, {Url, [], ContentType, Body}, Options, []) of
+    case httpc:request(Method, {Url, [], ContentType, Body}, Options, []) of
         {ok, {_Status, _Header, RespBody}} ->
             RespBody;
         {error, Reason} ->
@@ -223,7 +226,7 @@ http_p_request(Method, Url, Body, ContentType, Options) ->
 http_g_request(Url) ->
     http_g_request(Url, []).
 http_g_request(Url, Options) ->
-    case http:request(get, {Url, []},  Options, []) of
+    case httpc:request(get, {Url, []},  Options, []) of
         {ok, {_Status, _Header, Body}} ->
             %%{_Status, _Header, Body};
             Body;
@@ -233,7 +236,7 @@ http_g_request(Url, Options) ->
 http_d_request(Url) ->
     http_d_request(Url, []).
 http_d_request(Url, Options) ->
-    case http:request(delete, {Url, []}, Options, []) of
+    case httpc:request(delete, {Url, []}, Options, []) of
         {ok, {_Status, _Header, Body}} ->
             Body;
         {error, Reason} ->

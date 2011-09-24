@@ -13,9 +13,9 @@
 suite() -> [{timetrap, {minutes, 1}}].
 
 init_per_suite(Config) ->
-    ok = application:start(inets),
-    ok = application:start(ssl),
-    ok = application:start(sberla),
+    application:start(inets),
+    application:start(ssl),
+    application:start(sberla),
     Config.
 
 end_per_suite(_Config) ->

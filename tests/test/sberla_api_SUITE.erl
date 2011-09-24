@@ -54,14 +54,18 @@ alleged_false_negatives() -> ["http://17ebook.com",
 
 
 init_per_suite(Config) ->
-    ok = application:start(inets),
-    ok = application:start(ssl),
-    ok = application:start(sberla),
+    application:start(inets),
+    application:start(crypto),
+    application:start(public_key),
+    application:start(ssl),
+    application:start(sberla),
     Config.
     
 end_per_suite(_Config) ->
     application:stop(sberla),
     application:stop(ssl),
+    application:stop(public_key),
+    application:stop(crypto),
     application:stop(inets),
     ok.
 

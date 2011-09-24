@@ -132,6 +132,10 @@ init([]) ->
 %% @doc Handling call messages
 %% @end
 %%--------------------------------------------------------------------
+handle_call({canonicalize_url, Url}, _From, State) ->
+    Reply = canonicalize_url(Url, State),
+    {reply, Reply, State};
+
 handle_call(_Request, _From, State) ->
     Reply = State,   %% TODO for testing only: to be removed when ready
     %% Reply = ok,

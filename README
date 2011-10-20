@@ -38,3 +38,9 @@ Features:
 - Can run stand-alone with its own supervision tree or be included 
   inside an existing supervision tree
 - Guarantees synchronism between calls and their responses
+
+
+Who's using sberla:
+-------------------
+
+Lo.gy https://lo.gy/ -- The secYOUre enterprise URL shortener.
